@@ -13,20 +13,16 @@ public class Crawler {
 	private String[] urls = null;
 	boolean hasJobs = false;
 	
-	/**
-	 * 
-	 */
+
 	public Crawler() {
 
 	}
 
 	
-	public String[] GetSiteLinks(String host, String requestPath) 
+	public String[] getSiteLinks(String host, String requestPath, int port) 
 			throws UnknownHostException, IOException {
-//		URI uri = new URI(url);
-//		System.out.println(uri.getHost());
 		
-		Socket socket = new Socket(host, 80);
+		Socket socket = new Socket(host, port);
 		
 		PrintWriter request = new PrintWriter(socket.getOutputStream());
 		String formattedGetRequestString = String.format(this.getRequestString,
@@ -59,6 +55,39 @@ public class Crawler {
 		return absLinks.toArray(new String[0]);
 	}
 	
+	public String[] assignJobs(URI[] uris) throws UnknownHostException,
+			IOException {
+		HashSet<String> resultURLs = new HashSet<String>();
+
+		for (URI uri : uris) {
+			String[] links = getSiteLinks(uri.getHost(), uri.getRawPath(),
+					getPort(uri));
+			
+			for (String link : links) {
+				if (!resultURLs.contains(link)) {
+					resultURLs.add(link);
+				}
+			}
+		}
+		
+		return resultURLs.toArray(new String[0]);
+	}
+	
+	private int getPort(URI uri) {
+		int port = uri.getPort( );
+		String protocol = uri.getScheme( ); 
+		if (port == -1) {
+		    if (protocol.equals("http")) { 
+		        return 80;
+		    }
+		    else if (protocol.equals("https")) {
+		        return 443;
+		    }
+		}
+		
+		return -1;
+	}
+	
 	public boolean isAvailable() {
 		return hasJobs;
 	}
@@ -68,17 +97,6 @@ public class Crawler {
 	 */
 	public static void main(String[] args) {
 		Crawler crawler = new Crawler();
-
-		try {
-			String[] links = crawler.GetSiteLinks("en.wikipedia.org", "/wiki/United_States");
-			System.out.println(links);
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 }

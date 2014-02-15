@@ -1,13 +1,15 @@
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.*;
 
 
 public class Master {
 
 	private HashSet<String> visitedHostNames = new HashSet<String>();
-	private HashMap<String, String> urlsRepository = 
-			new HashMap<String, String>();
+	private HashSet<String> unvisitedHostNames = new HashSet<String>();
+	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
 	private Crawler[] crawlers = null;
 	private String[] seedUrls = null;
 	private int numOfCrawlers = 0;
@@ -41,8 +43,9 @@ public class Master {
 		String host = uri.getHost();
 		String requestPath = uri.getRawPath();
 
-		if (!urlsRepository.containsKey(host)) {
-			urlsRepository.put(host, requestPath);
+		if (!unvisitedHostNames.contains(host)) {
+			unvisitedHostNames.add(host);
+			urlsRepository.add(uri);
 		}
 	}
 
@@ -54,10 +57,14 @@ public class Master {
 		}
 	}
 	
-	public String[] StartCrawl() {
+	public String[] startCrawl() throws UnknownHostException, IOException {
 		// TODO: Change to all crawlers.
+		String[] results = null;
 		Crawler c = crawlers[0];
-		return null;
+		if (!c.hasJobs) {
+			results = c.assignJobs(urlsRepository.toArray(new URI[0]));
+		}
+		return results;
 	}
 	
 	
@@ -65,8 +72,23 @@ public class Master {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		String[] seedUrls = {"http://www.google.com"};
+		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
 		
+		try {
+			Master master = new Master(seedUrls, 1);
+			String[] res = master.startCrawl();
+			
+			System.out.println(Arrays.toString(res));
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }
