@@ -8,10 +8,9 @@ import org.jsoup.select.Elements;
 
 public class Crawler {
 	
-	private String getRequestString = "GET %s HTTP/1.1\r\nHost: %s\r\n" +
-			"Connection: close\r\n\r\n";
-	private String[] urls = null;
-	boolean hasJobs = false;
+	private final String GET_REQUEST_STRING = "GET %s HTTP/1.1\r\nHost: %s" +
+			"\r\nConnection: close\r\n\r\n";
+	boolean m_hasJobs = false;
 	
 
 	public Crawler() {
@@ -25,7 +24,7 @@ public class Crawler {
 		Socket socket = new Socket(host, port);
 		
 		PrintWriter request = new PrintWriter(socket.getOutputStream());
-		String formattedGetRequestString = String.format(this.getRequestString,
+		String formattedGetRequestString = String.format(GET_REQUEST_STRING,
 				requestPath, host);
 
 		request.print(formattedGetRequestString);
@@ -59,6 +58,8 @@ public class Crawler {
 			IOException {
 		HashSet<String> resultURLs = new HashSet<String>();
 
+		this.m_hasJobs = true;
+		
 		for (URI uri : uris) {
 			String[] links = getSiteLinks(uri.getHost(), uri.getRawPath(),
 					getPort(uri));
@@ -69,6 +70,8 @@ public class Crawler {
 				}
 			}
 		}
+		
+		this.m_hasJobs = false;
 		
 		return resultURLs.toArray(new String[0]);
 	}
@@ -89,7 +92,7 @@ public class Crawler {
 	}
 	
 	public boolean isAvailable() {
-		return hasJobs;
+		return !this.m_hasJobs;
 	}
 	
 	/**

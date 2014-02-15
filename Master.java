@@ -11,7 +11,7 @@ public class Master {
 	private HashSet<String> unvisitedHostNames = new HashSet<String>();
 	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
 	private Crawler[] crawlers = null;
-	private String[] seedUrls = null;
+	private String[] m_seedUrls = null;
 	private int numOfCrawlers = 0;
 
 	public Master(String[] seedUrls, int numOfCrawlers) 
@@ -26,14 +26,15 @@ public class Master {
 					"Number of crawlers must be more than 0.");
 		}
 
-		this.seedUrls = seedUrls;
+		this.m_seedUrls = seedUrls;
 		this.numOfCrawlers = numOfCrawlers;
 		initializeCrawlers();
-		addSeedUrlsToRepository();
+		addUrlListToRepository(this.m_seedUrls);
 	}
 	
-	private void addSeedUrlsToRepository() throws URISyntaxException {
-		for (String url : seedUrls) {
+	private void addUrlListToRepository(String[] urlList) 
+			throws URISyntaxException {
+		for (String url : urlList) {
 			addUrlToRepository(url);
 		}
 	}
@@ -41,12 +42,28 @@ public class Master {
 	private void addUrlToRepository(String url) throws URISyntaxException {
 		URI uri = new URI(url);
 		String host = uri.getHost();
-		String requestPath = uri.getRawPath();
+		String pageType = getPageType(uri.getRawPath());
 
-		if (!unvisitedHostNames.contains(host)) {
+		if (!unvisitedHostNames.contains(host) && isHTMLPageType(pageType)) {
 			unvisitedHostNames.add(host);
 			urlsRepository.add(uri);
 		}
+	}
+
+	private boolean isHTMLPageType(String pageType) {
+		return pageType == "html" || pageType == "htm" || pageType == "";
+	}
+
+	private String getPageType(String rawPath) {
+		if (rawPath == null) {
+			return "";
+		}
+
+		int dotIndex = rawPath.lastIndexOf('.');
+		if (dotIndex != -1) {
+			return rawPath.substring(dotIndex + 1);
+		}
+		return "";
 	}
 
 	private void initializeCrawlers() {
@@ -57,14 +74,27 @@ public class Master {
 		}
 	}
 	
-	public String[] startCrawl() throws UnknownHostException, IOException {
+	public String[] startCrawl() throws UnknownHostException, IOException,
+			URISyntaxException {
 		// TODO: Change to all crawlers.
-		String[] results = null;
+		ArrayList<String> results = new ArrayList<String>();
 		Crawler c = crawlers[0];
-		if (!c.hasJobs) {
-			results = c.assignJobs(urlsRepository.toArray(new URI[0]));
+		
+		while (!urlsRepository.isEmpty()) {
+			if (c.isAvailable()) {
+				// TODO: Change to a block of URLs
+				String[] newURls = c.assignJobs(urlsRepository.toArray(new URI[0]));
+				
+				for (URI n : urlsRepository) {
+					results.add(n.getHost() + n.getRawPath());
+				}
+				
+				// TODO: clear urlsRepository for now.
+				urlsRepository.clear();
+				addUrlListToRepository(newURls);
+			}
 		}
-		return results;
+		return results.toArray(new String[0]);
 	}
 	
 	
