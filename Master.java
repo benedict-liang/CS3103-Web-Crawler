@@ -15,6 +15,7 @@ public class Master {
 	private String[] m_seedUrls = null;
 	private ExecutorService m_executorPool;
 	private int m_linkCounts = 0;
+	private ArrayList<String> m_results = new ArrayList<String>();
 
 	public Master(String[] seedUrls, int numOfCrawlers) 
 			throws URISyntaxException {
@@ -89,24 +90,49 @@ public class Master {
 //		}
 //		return results.toArray(new String[0]);
 		
-		ArrayList<String> results = new ArrayList<String>();
+//		ArrayList<String> results = new ArrayList<String>();
 		
-		while (!urlsRepository.isEmpty() && m_linkCounts < 100) {
+		while (m_linkCounts < 150) {
+			System.out.println("Current linkcounts: " + m_linkCounts);
+			if (urlsRepository.isEmpty()) {
+				continue;
+			}
 			URI uri = urlsRepository.get(0);
 			urlsRepository.remove(0);
 			m_executorPool.execute(new Crawler(uri, this));
-			results.add(uri.getHost());
+//			results.add(uri.getHost());
 		}
 		
+		if (!m_executorPool.isTerminated()) {
+			m_executorPool.shutdownNow(); 
+        }
+		
+		while (!m_executorPool.isTerminated()) {
+			
+		}
+		
+        System.out.println("\nFinished all threads");
+		
+//		while ((!m_executorPool.isTerminated()) && (!urlsRepository.isEmpty() || m_linkCounts < 1500)) {
+//			URI uri = urlsRepository.get(0);
+//			urlsRepository.remove(0);
+//			m_executorPool.execute(new Crawler(uri, this));
+//			results.add(uri.getHost());
+//		}
 		
 		
-		return results.toArray(new String[0]);
+		return m_results.toArray(new String[0]);
 	}
 	
 	
-	public synchronized void addCrawledLinks(String[] links)
+	public synchronized void addCrawledLinks(String[] links, String crawledHost)
 			throws URISyntaxException {
+		if (m_linkCounts >= 150) {
+			return;
+		}
+		
 		addUrlListToRepository(links);
+		m_results.add(crawledHost);
 		m_linkCounts += 1;
 	}
 	
@@ -117,7 +143,7 @@ public class Master {
 		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
 		
 		try {
-			Master master = new Master(seedUrls, 1);
+			Master master = new Master(seedUrls, 64);
 			String[] res = master.startCrawl();
 			
 			System.out.println(Arrays.toString(res));

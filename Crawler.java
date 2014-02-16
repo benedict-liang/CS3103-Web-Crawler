@@ -28,6 +28,10 @@ public class Crawler implements Runnable {
 	public String[] getSiteLinks(String host, String requestPath, int port) 
 			throws UnknownHostException, IOException {
 		
+		if (port == -1) {
+			throw new PortUnreachableException("Invalid port.");
+		}
+		
 		Socket socket = new Socket(host, port);
 		
 		PrintWriter request = new PrintWriter(socket.getOutputStream());
@@ -104,19 +108,32 @@ public class Crawler implements Runnable {
 	
 	@Override
 	public void run() {
+		String[] links = null;
+
 		try {
-			String[] links = getSiteLinks(m_uri.getHost(), m_uri.getRawPath(),
+			links = getSiteLinks(m_uri.getHost(), m_uri.getRawPath(),
 					getPort(m_uri));
-			m_master.addCrawledLinks(links);
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("UnknownHostException during GET request: " + 
+					m_uri.toString());
+			return;
+		} catch (PortUnreachableException e) {
+			System.err.println("PortUnreachableException during GET request: " +
+					m_uri.toString());
+			return;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("IOException during GET request: " +
+					m_uri.toString());
+			return;
+		} 
+		
+		if (links != null) {
+			try {
+				m_master.addCrawledLinks(links, m_uri.getHost());
+			} catch (URISyntaxException e) {
+				System.err.println("URISyntaxException for original link: " +
+						m_uri.toString());
+			}
 		}
 	}
 	
