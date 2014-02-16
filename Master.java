@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 
 public class Master {
 
-	private final int LINK_COUNT_THRESHOLD = 5000;
+	private final int LINK_COUNT_THRESHOLD = 20;
 	private HashSet<String> unvisitedHostNames = new HashSet<String>();
 	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
 	private String[] m_seedUrls = null;
@@ -84,7 +84,10 @@ public class Master {
 			}
 			URI uri = urlsRepository.get(0);
 			urlsRepository.remove(0);
-			m_executorPool.execute(new Crawler(uri, this));
+			
+			if (uri != null) {
+				m_executorPool.execute(new Crawler(uri, this));
+			}
 		}
 		
 		System.out.println("Found " + m_linkCounts + " links.");
@@ -94,7 +97,7 @@ public class Master {
         }
 		
 		while (!m_executorPool.isTerminated()) {
-			
+			// Wait till threads in the executor pool are stopped.
 		}
 		
         System.out.println("Finished all threads.");
@@ -121,7 +124,7 @@ public class Master {
 		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
 		
 		try {
-			Master master = new Master(seedUrls, 128);
+			Master master = new Master(seedUrls, 1);
 			String[] res = master.startCrawl();
 			
 			System.out.println(Arrays.toString(res));

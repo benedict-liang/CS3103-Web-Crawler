@@ -53,6 +53,7 @@ public class Crawler implements Runnable {
 		
 		for (Element l : links) {
 			String link = l.absUrl("href");
+			System.out.println(l.toString());
 			if (link != "") {
 				absLinks.add(link);
 			}
@@ -78,6 +79,10 @@ public class Crawler implements Runnable {
 	
 	@Override
 	public void run() {
+		if (m_uri == null) {
+			return;
+		}
+		
 		String[] links = null;
 
 		try {
@@ -95,7 +100,7 @@ public class Crawler implements Runnable {
 			System.err.println("IOException during GET request: " +
 					m_uri.toString());
 			return;
-		} 
+		}
 		
 		if (links != null) {
 			m_master.addCrawledLinks(links, m_uri.getHost());
