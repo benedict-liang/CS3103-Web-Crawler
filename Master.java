@@ -9,13 +9,14 @@ import java.util.concurrent.Executors;
 
 public class Master {
 
+	private final int LINK_COUNT_THRESHOLD = 50;
 	private HashSet<String> unvisitedHostNames = new HashSet<String>();
 	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
 	private String[] m_seedUrls = null;
 	private ExecutorService m_executorPool;
 	private int m_linkCounts = 0;
 	private ArrayList<String> m_results = new ArrayList<String>();
-	private final int LINK_COUNT_THRESHOLD = 50;
+	
 
 	public Master(String[] seedUrls, int numOfCrawlers) 
 			throws URISyntaxException {
@@ -113,7 +114,7 @@ public class Master {
 		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
 		
 		try {
-			Master master = new Master(seedUrls, 64);
+			Master master = new Master(seedUrls, 128);
 			String[] res = master.startCrawl();
 			
 			System.out.println(Arrays.toString(res));
