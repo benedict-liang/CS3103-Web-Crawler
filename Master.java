@@ -3,8 +3,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 
 public class Master {
@@ -87,6 +86,13 @@ public class Master {
 			if (urlsRepository.isEmpty()) {
 				continue;
 			}
+
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				System.err.println("Crawling delay interupted.");
+			}
+			
 			URI uri = urlsRepository.get(0);
 			urlsRepository.remove(0);
 			

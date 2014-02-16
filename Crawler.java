@@ -106,7 +106,7 @@ public class Crawler implements Runnable {
 		if (m_uri == null) {
 			return;
 		}
-		
+		System.out.println("running");
 		String[] links = null;
 
 		try {
