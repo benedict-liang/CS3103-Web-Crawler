@@ -15,7 +15,7 @@ public class Master {
 	private ExecutorService m_executorPool;
 	private int m_linkCounts = 0;
 	private ArrayList<String> m_results = new ArrayList<String>();
-	private final int LINK_COUNT_THRESHOLD = 150;
+	private final int LINK_COUNT_THRESHOLD = 50;
 
 	public Master(String[] seedUrls, int numOfCrawlers) 
 			throws URISyntaxException {
@@ -79,7 +79,7 @@ public class Master {
 			m_executorPool.execute(new Crawler(uri, this));
 		}
 		
-		System.out.println("Found " + LINK_COUNT_THRESHOLD + "links.");
+		System.out.println("Found " + LINK_COUNT_THRESHOLD + " links.");
 		
 		if (!m_executorPool.isTerminated()) {
 			m_executorPool.shutdownNow(); 
