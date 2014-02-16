@@ -9,13 +9,13 @@ import java.util.concurrent.Executors;
 
 public class Master {
 
-	private HashSet<String> visitedHostNames = new HashSet<String>();
 	private HashSet<String> unvisitedHostNames = new HashSet<String>();
 	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
 	private String[] m_seedUrls = null;
 	private ExecutorService m_executorPool;
 	private int m_linkCounts = 0;
 	private ArrayList<String> m_results = new ArrayList<String>();
+	private final int LINK_COUNT_THRESHOLD = 150;
 
 	public Master(String[] seedUrls, int numOfCrawlers) 
 			throws URISyntaxException {
@@ -69,39 +69,17 @@ public class Master {
 	}
 	
 	public String[] startCrawl() throws UnknownHostException, IOException,
-			URISyntaxException {
-		// TODO: Change to all crawlers.
-//		ArrayList<String> results = new ArrayList<String>();
-//		Crawler c = crawlers[0];
-//		
-//		while (!urlsRepository.isEmpty()) {
-//			if (c.isAvailable()) {
-//				// TODO: Change to a block of URLs
-//				String[] newURls = c.assignJobs(urlsRepository.toArray(new URI[0]));
-//				
-//				for (URI n : urlsRepository) {
-//					results.add(n.getHost());
-//				}
-//				
-//				// TODO: clear urlsRepository for now.
-//				urlsRepository.clear();
-//				addUrlListToRepository(newURls);
-//			}
-//		}
-//		return results.toArray(new String[0]);
-		
-//		ArrayList<String> results = new ArrayList<String>();
-		
-		while (m_linkCounts < 150) {
-			System.out.println("Current linkcounts: " + m_linkCounts);
+			URISyntaxException {	
+		while (m_linkCounts < LINK_COUNT_THRESHOLD) {
 			if (urlsRepository.isEmpty()) {
 				continue;
 			}
 			URI uri = urlsRepository.get(0);
 			urlsRepository.remove(0);
 			m_executorPool.execute(new Crawler(uri, this));
-//			results.add(uri.getHost());
 		}
+		
+		System.out.println("Found " + LINK_COUNT_THRESHOLD + "links.");
 		
 		if (!m_executorPool.isTerminated()) {
 			m_executorPool.shutdownNow(); 
@@ -111,23 +89,15 @@ public class Master {
 			
 		}
 		
-        System.out.println("\nFinished all threads");
-		
-//		while ((!m_executorPool.isTerminated()) && (!urlsRepository.isEmpty() || m_linkCounts < 1500)) {
-//			URI uri = urlsRepository.get(0);
-//			urlsRepository.remove(0);
-//			m_executorPool.execute(new Crawler(uri, this));
-//			results.add(uri.getHost());
-//		}
-		
-		
+        System.out.println("Finished all threads.");
+
 		return m_results.toArray(new String[0]);
 	}
 	
 	
 	public synchronized void addCrawledLinks(String[] links, String crawledHost)
 			throws URISyntaxException {
-		if (m_linkCounts >= 150) {
+		if (m_linkCounts >= LINK_COUNT_THRESHOLD) {
 			return;
 		}
 		

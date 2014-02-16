@@ -11,14 +11,10 @@ public class Crawler implements Runnable {
 	
 	private final String GET_REQUEST_STRING = "GET %s HTTP/1.1\r\nHost: %s" +
 			"\r\nConnection: close\r\n\r\n";
-	boolean m_hasJobs = false;
 	private URI m_uri;
 	private Master m_master;
 
-	public Crawler() {
 
-	}
-	
 	public Crawler(URI uri, Master master) {
 		this.m_uri = uri;
 		this.m_master = master;
@@ -65,28 +61,6 @@ public class Crawler implements Runnable {
 		return absLinks.toArray(new String[0]);
 	}
 	
-	public String[] assignJobs(URI[] uris) throws UnknownHostException,
-			IOException {
-		HashSet<String> resultURLs = new HashSet<String>();
-
-		this.m_hasJobs = true;
-		
-		for (URI uri : uris) {
-			String[] links = getSiteLinks(uri.getHost(), uri.getRawPath(),
-					getPort(uri));
-			
-			for (String link : links) {
-				if (!resultURLs.contains(link)) {
-					resultURLs.add(link);
-				}
-			}
-		}
-		
-		this.m_hasJobs = false;
-		
-		return resultURLs.toArray(new String[0]);
-	}
-	
 	private int getPort(URI uri) {
 		int port = uri.getPort( );
 		String protocol = uri.getScheme( ); 
@@ -100,10 +74,6 @@ public class Crawler implements Runnable {
 		}
 		
 		return -1;
-	}
-	
-	public boolean isAvailable() {
-		return !this.m_hasJobs;
 	}
 	
 	@Override
@@ -141,7 +111,7 @@ public class Crawler implements Runnable {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Crawler crawler = new Crawler();
+
 	}
 
 }
