@@ -35,12 +35,14 @@ public class Master {
 		addUrlListToRepository(this.m_seedUrls);
 	}
 	
+	
 	private void addUrlListToRepository(String[] urlList) {
 		for (String url : urlList) {
 			addUrlToRepository(url);
 		}
 	}
 
+	
 	private void addUrlToRepository(String url) {
 		URI uri = null;
 		try {
@@ -59,10 +61,12 @@ public class Master {
 		}
 	}
 
+	
 	private boolean isHTMLPageType(String pageType) {
 		return pageType == "html" || pageType == "htm" || pageType == "";
 	}
 
+	
 	private String getPageType(String rawPath) {
 		if (rawPath == null) {
 			return "";
@@ -74,6 +78,7 @@ public class Master {
 		}
 		return "";
 	}
+	
 	
 	public String[] startCrawl() throws UnknownHostException, IOException,
 			URISyntaxException {	
@@ -116,6 +121,7 @@ public class Master {
 		m_results.add(crawledHost);
 		m_linkCounts += 1;
 	}
+	
 	
 	/**
 	 * @param args

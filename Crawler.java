@@ -21,7 +21,7 @@ public class Crawler implements Runnable {
 	}
 
 	
-	public String[] getSiteLinks(String host, String requestPath, int port) 
+	private String[] getSiteLinks(String host, String requestPath, int port) 
 			throws UnknownHostException, IOException {
 		
 		if (port == -1) {
@@ -29,7 +29,53 @@ public class Crawler implements Runnable {
 		}
 		
 		Socket socket = new Socket(host, port);
+		performGETRequest(host, requestPath, socket);
+
+		ArrayList<String> absLinks = getLinksFromHTMLPage(socket);
+
+		return absLinks.toArray(new String[0]);
+	}
+
+
+	private ArrayList<String> getLinksFromHTMLPage(Socket socket)
+			throws IOException {
+		String html = readDocumentStringFromSocketBuffer(socket);
 		
+		Document doc = Jsoup.parse(html);
+		Elements links = doc.select("a[href]");
+		
+		return getLinksFromAnchorTags(links);
+	}
+
+
+	private ArrayList<String> getLinksFromAnchorTags(Elements links) {
+		ArrayList<String> absLinks = new ArrayList<String>();
+		
+		for (Element l : links) {
+			String link = l.absUrl("href");
+			if (link != "") {
+				absLinks.add(link);
+			}
+		}
+		return absLinks;
+	}
+
+
+	private String readDocumentStringFromSocketBuffer(Socket socket)
+			throws IOException {
+		InputStream inputStream = socket.getInputStream();
+		BufferedReader rd = new BufferedReader(
+		        new InputStreamReader(inputStream));
+		String line, html = "";
+		while ((line = rd.readLine()) != null) {
+		    html += "\n" + line;
+		}
+		return html;
+	}
+
+
+	private void performGETRequest(String host, String requestPath,
+			Socket socket) throws IOException {
 		PrintWriter request = new PrintWriter(socket.getOutputStream());
 		String formattedGetRequestString = String.format(GET_REQUEST_STRING,
 				requestPath, host);
@@ -37,30 +83,8 @@ public class Crawler implements Runnable {
 		request.print(formattedGetRequestString);
 		
 		request.flush();
-		
-		InputStream inStream = socket.getInputStream();
-		BufferedReader rd = new BufferedReader(
-		        new InputStreamReader(inStream));
-		String line, html = "";
-		while ((line = rd.readLine()) != null) {
-		    html += "\n" + line;
-		}
-		
-		Document doc = Jsoup.parse(html);
-		Elements links = doc.select("a[href]");
-		
-		ArrayList<String> absLinks = new ArrayList<String>();
-		
-		for (Element l : links) {
-			String link = l.absUrl("href");
-			System.out.println(l.toString());
-			if (link != "") {
-				absLinks.add(link);
-			}
-		}
-
-		return absLinks.toArray(new String[0]);
 	}
+
 	
 	private int getPort(URI uri) {
 		int port = uri.getPort( );
