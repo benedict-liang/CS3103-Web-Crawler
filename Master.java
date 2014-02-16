@@ -86,7 +86,7 @@ public class Master {
 				String[] newURls = c.assignJobs(urlsRepository.toArray(new URI[0]));
 				
 				for (URI n : urlsRepository) {
-					results.add(n.getHost() + n.getRawPath());
+					results.add(n.getHost());
 				}
 				
 				// TODO: clear urlsRepository for now.
