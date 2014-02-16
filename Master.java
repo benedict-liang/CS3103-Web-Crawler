@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 
 public class Master {
 
-	private final int LINK_COUNT_THRESHOLD = 50;
+	private final int LINK_COUNT_THRESHOLD = 5000;
 	private HashSet<String> unvisitedHostNames = new HashSet<String>();
 	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
 	private String[] m_seedUrls = null;
@@ -35,15 +35,21 @@ public class Master {
 		addUrlListToRepository(this.m_seedUrls);
 	}
 	
-	private void addUrlListToRepository(String[] urlList) 
-			throws URISyntaxException {
+	private void addUrlListToRepository(String[] urlList) {
 		for (String url : urlList) {
 			addUrlToRepository(url);
 		}
 	}
 
-	private void addUrlToRepository(String url) throws URISyntaxException {
-		URI uri = new URI(url);
+	private void addUrlToRepository(String url) {
+		URI uri = null;
+		try {
+			uri = new URI(url);
+		} catch (URISyntaxException e) {
+			System.err.println("URISyntaxException when adding link: " + url);
+			return;
+		}
+
 		String host = uri.getHost();
 		String pageType = getPageType(uri.getRawPath());
 
@@ -71,7 +77,8 @@ public class Master {
 	
 	public String[] startCrawl() throws UnknownHostException, IOException,
 			URISyntaxException {	
-		while (m_linkCounts < LINK_COUNT_THRESHOLD) {
+		while ((m_linkCounts < LINK_COUNT_THRESHOLD) || 
+				(urlsRepository.isEmpty() && m_executorPool.isTerminated())) {
 			if (urlsRepository.isEmpty()) {
 				continue;
 			}
@@ -80,7 +87,7 @@ public class Master {
 			m_executorPool.execute(new Crawler(uri, this));
 		}
 		
-		System.out.println("Found " + LINK_COUNT_THRESHOLD + " links.");
+		System.out.println("Found " + m_linkCounts + " links.");
 		
 		if (!m_executorPool.isTerminated()) {
 			m_executorPool.shutdownNow(); 
@@ -96,8 +103,8 @@ public class Master {
 	}
 	
 	
-	public synchronized void addCrawledLinks(String[] links, String crawledHost)
-			throws URISyntaxException {
+	public synchronized void addCrawledLinks(String[] links, 
+			String crawledHost) {
 		if (m_linkCounts >= LINK_COUNT_THRESHOLD) {
 			return;
 		}

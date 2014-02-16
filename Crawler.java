@@ -98,12 +98,7 @@ public class Crawler implements Runnable {
 		} 
 		
 		if (links != null) {
-			try {
-				m_master.addCrawledLinks(links, m_uri.getHost());
-			} catch (URISyntaxException e) {
-				System.err.println("URISyntaxException for original link: " +
-						m_uri.toString());
-			}
+			m_master.addCrawledLinks(links, m_uri.getHost());
 		}
 	}
 	
