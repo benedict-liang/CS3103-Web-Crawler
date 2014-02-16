@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.io.*;
 import java.net.*;
 
@@ -6,15 +7,21 @@ import org.jsoup.*;
 import org.jsoup.nodes.*;
 import org.jsoup.select.Elements;
 
-public class Crawler {
+public class Crawler implements Runnable {
 	
 	private final String GET_REQUEST_STRING = "GET %s HTTP/1.1\r\nHost: %s" +
 			"\r\nConnection: close\r\n\r\n";
 	boolean m_hasJobs = false;
-	
+	private URI m_uri;
+	private Master m_master;
 
 	public Crawler() {
 
+	}
+	
+	public Crawler(URI uri, Master master) {
+		this.m_uri = uri;
+		this.m_master = master;
 	}
 
 	
@@ -93,6 +100,24 @@ public class Crawler {
 	
 	public boolean isAvailable() {
 		return !this.m_hasJobs;
+	}
+	
+	@Override
+	public void run() {
+		try {
+			String[] links = getSiteLinks(m_uri.getHost(), m_uri.getRawPath(),
+					getPort(m_uri));
+			m_master.addCrawledLinks(links);
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**

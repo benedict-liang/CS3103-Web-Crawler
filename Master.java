@@ -3,6 +3,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class Master {
@@ -10,9 +12,9 @@ public class Master {
 	private HashSet<String> visitedHostNames = new HashSet<String>();
 	private HashSet<String> unvisitedHostNames = new HashSet<String>();
 	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
-	private Crawler[] crawlers = null;
 	private String[] m_seedUrls = null;
-	private int numOfCrawlers = 0;
+	private ExecutorService m_executorPool;
+	private int m_linkCounts = 0;
 
 	public Master(String[] seedUrls, int numOfCrawlers) 
 			throws URISyntaxException {
@@ -27,8 +29,7 @@ public class Master {
 		}
 
 		this.m_seedUrls = seedUrls;
-		this.numOfCrawlers = numOfCrawlers;
-		initializeCrawlers();
+		this.m_executorPool = Executors.newFixedThreadPool(numOfCrawlers);
 		addUrlListToRepository(this.m_seedUrls);
 	}
 	
@@ -65,38 +66,49 @@ public class Master {
 		}
 		return "";
 	}
-
-	private void initializeCrawlers() {
-		crawlers = new Crawler[this.numOfCrawlers];
-		
-		for (int i = 0; i < crawlers.length; i++) {
-			crawlers[i] = new Crawler();
-		}
-	}
 	
 	public String[] startCrawl() throws UnknownHostException, IOException,
 			URISyntaxException {
 		// TODO: Change to all crawlers.
-		ArrayList<String> results = new ArrayList<String>();
-		Crawler c = crawlers[0];
+//		ArrayList<String> results = new ArrayList<String>();
+//		Crawler c = crawlers[0];
+//		
+//		while (!urlsRepository.isEmpty()) {
+//			if (c.isAvailable()) {
+//				// TODO: Change to a block of URLs
+//				String[] newURls = c.assignJobs(urlsRepository.toArray(new URI[0]));
+//				
+//				for (URI n : urlsRepository) {
+//					results.add(n.getHost());
+//				}
+//				
+//				// TODO: clear urlsRepository for now.
+//				urlsRepository.clear();
+//				addUrlListToRepository(newURls);
+//			}
+//		}
+//		return results.toArray(new String[0]);
 		
-		while (!urlsRepository.isEmpty()) {
-			if (c.isAvailable()) {
-				// TODO: Change to a block of URLs
-				String[] newURls = c.assignJobs(urlsRepository.toArray(new URI[0]));
-				
-				for (URI n : urlsRepository) {
-					results.add(n.getHost());
-				}
-				
-				// TODO: clear urlsRepository for now.
-				urlsRepository.clear();
-				addUrlListToRepository(newURls);
-			}
+		ArrayList<String> results = new ArrayList<String>();
+		
+		while (!urlsRepository.isEmpty() && m_linkCounts < 100) {
+			URI uri = urlsRepository.get(0);
+			urlsRepository.remove(0);
+			m_executorPool.execute(new Crawler(uri, this));
+			results.add(uri.getHost());
 		}
+		
+		
+		
 		return results.toArray(new String[0]);
 	}
 	
+	
+	public synchronized void addCrawledLinks(String[] links)
+			throws URISyntaxException {
+		addUrlListToRepository(links);
+		m_linkCounts += 1;
+	}
 	
 	/**
 	 * @param args
