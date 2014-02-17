@@ -9,13 +9,13 @@ import java.util.concurrent.*;
 public class Master {
 
 	private final int LINK_COUNT_THRESHOLD = 20;
+	private final int REQUEST_DELAY = 2000;
 	private HashSet<String> unvisitedHostNames = new HashSet<String>();
 	private ArrayList<URI> urlsRepository = new ArrayList<URI>();
 	private String[] m_seedUrls = null;
 	private ExecutorService m_executorPool;
 	private int m_linkCounts = 0;
 	private ArrayList<String> m_results = new ArrayList<String>();
-	
 
 	public Master(String[] seedUrls, int numOfCrawlers) 
 			throws URISyntaxException {
@@ -88,7 +88,7 @@ public class Master {
 			}
 
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(REQUEST_DELAY);
 			} catch (InterruptedException e) {
 				System.err.println("Crawling delay interupted.");
 			}
@@ -119,13 +119,12 @@ public class Master {
 	
 	public synchronized void addCrawledLinks(String[] links, 
 			String crawledHost, long RTT) {
-		// TODO: Add RTT in.
 		if (m_linkCounts >= LINK_COUNT_THRESHOLD) {
 			return;
 		}
 		
 		addUrlListToRepository(links);
-		m_results.add(crawledHost);
+		m_results.add(crawledHost + "        " + RTT + " milliseconds");
 		m_linkCounts += 1;
 	}
 	
@@ -137,7 +136,7 @@ public class Master {
 		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
 		
 		try {
-			Master master = new Master(seedUrls, 1);
+			Master master = new Master(seedUrls, 100);
 			String[] res = master.startCrawl();
 			
 			System.out.println(Arrays.toString(res));
