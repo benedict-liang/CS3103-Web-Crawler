@@ -126,19 +126,21 @@ public class Master {
 	
 	
 	private void writeResultsToFile() {
-//		PrintWriter writer;
-//		try {
-//			writer = new PrintWriter("the-file-name.txt", "UTF-8");
-//			writer.println("The first line");
-//			writer.println("The second line");
-//			writer.close();
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (UnsupportedEncodingException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter("results.txt", "UTF-8");
+			for (String r : m_results) {
+				writer.println(r);
+			}
+
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
 
