@@ -16,7 +16,18 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 
-
+/**
+ * The Crawler class represents one worker in the ThreadPoolExecutor (mentioned
+ * in Master.java). This class handles the GET request of one URI (link).
+ * Exceptions will not cause the other executing threads to terminate.
+ * 
+ * The Crawler aims to retrieve all outgoing links from the given URI and its
+ * response time.
+ * 
+ * The remaining descriptions and optimizations are listed in Master.java.
+ * @author benedict
+ *
+ */
 public class Crawler implements Runnable {
 	
 	private final String GET_REQUEST_STRING = "GET %s HTTP/1.1\r\nHost: %s" +
@@ -26,12 +37,26 @@ public class Crawler implements Runnable {
 	private HashMap<String, Long> m_startEndTimes = new HashMap<String, Long>();
 
 
+	/**
+	 * The Crawler constructor.
+	 * @param uri the URI to crawl.
+	 * @param master the Master handle to respond to.
+	 */
 	public Crawler(URI uri, Master master) {
 		this.m_uri = uri;
 		this.m_master = master;
 	}
 
-	
+	/**
+	 * Gets the outgoing links present in the request URI. Only absolute links
+	 * present in the response HTML page will be returned.
+	 * @param host the URI host.
+	 * @param requestPath the URI request path relative to the host.
+	 * @param port the port number to run the request on.
+	 * @return the array of absolute URLs obtained from the response page.
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 */
 	private String[] getSiteLinks(String host, String requestPath, int port) 
 			throws UnknownHostException, IOException {
 		
@@ -41,7 +66,7 @@ public class Crawler implements Runnable {
 		
 		Socket socket = new Socket(host, port);
 
-		performGETRequest(host, requestPath, socket, m_startEndTimes);
+		sendGETRequest(host, requestPath, socket, m_startEndTimes);
 		ArrayList<String> absLinks = getLinksFromHTMLPage(socket, m_startEndTimes);
 
 		socket.close();
@@ -49,7 +74,13 @@ public class Crawler implements Runnable {
 		return absLinks.toArray(new String[0]);
 	}
 
-
+	/**
+	 * Strip out all the links from the given HTML page.
+	 * @param socket the socket connecting to the request URI.
+	 * @param startEndTimes the start and end times map to update.
+	 * @return the array of absolute URLs obtained from the response page. 
+	 * @throws IOException
+	 */
 	private ArrayList<String> getLinksFromHTMLPage(Socket socket, 
 			HashMap<String, Long> startEndTimes) throws IOException {
 		String html = readDocumentStringFromSocketBuffer(socket,
@@ -61,7 +92,11 @@ public class Crawler implements Runnable {
 		return getLinksFromAnchorTags(links);
 	}
 
-
+	/**
+	 * Get the absolute links from a given list of anchor tags.
+	 * @param links the array of anchor tags.
+	 * @return the filtered absolute links.
+	 */
 	private ArrayList<String> getLinksFromAnchorTags(Elements links) {
 		ArrayList<String> absLinks = new ArrayList<String>();
 		
@@ -74,7 +109,13 @@ public class Crawler implements Runnable {
 		return absLinks;
 	}
 
-
+	/**
+	 * Obtain the HTML document string from the socket buffer.
+	 * @param socket the socket connecting to the request URI.
+	 * @param startEndTimes the start and end times map to update.
+	 * @return the HTML document string.
+	 * @throws IOException
+	 */
 	private String readDocumentStringFromSocketBuffer(Socket socket,
 			HashMap<String, Long> startEndTimes) throws IOException {
 		InputStream inputStream = socket.getInputStream();
@@ -91,9 +132,17 @@ public class Crawler implements Runnable {
 		return sb.toString();
 	}
 
-
-	private void performGETRequest(String host, String requestPath,
-			Socket socket, HashMap<String, Long> startEndTimes) throws IOException {
+	/**
+	 * Sends the GET request to the request host via the socket object. 
+	 * @param host the URI host.
+	 * @param requestPath the URI request path relative to the host.
+	 * @param socket the socket connecting to the request URI.
+	 * @param startEndTimes the start and end times map to update.
+	 * @throws IOException
+	 */
+	private void sendGETRequest(String host, String requestPath,
+			Socket socket, HashMap<String, Long> startEndTimes) 
+					throws IOException {
 		DataOutputStream request = new DataOutputStream(socket.getOutputStream());
 		String formattedGetRequestString = String.format(GET_REQUEST_STRING,
 				requestPath, host);
@@ -102,7 +151,12 @@ public class Crawler implements Runnable {
 		request.writeBytes(formattedGetRequestString);
 	}
 
-	
+	/**
+	 * Gets the port of the URI based on the URI's protocol.
+	 * @param uri the URI to crawl.
+	 * @return 80 or 443 if the protocol is HTTP or HTTPS respectively.
+	 * 		Return -1 for an invalid protocol.
+	 */
 	private int getPort(URI uri) {
 		int port = uri.getPort( );
 		String protocol = uri.getScheme( ); 
@@ -118,12 +172,16 @@ public class Crawler implements Runnable {
 		return -1;
 	}
 	
+	/**
+	 * The entry point for the thread. The thread will get the outgoing links
+	 * from the input URI and update the Master. If any exception is
+	 * encountered, the thread will not update the Master.
+	 */
 	@Override
 	public void run() {
 		if (m_uri == null) {
 			return;
 		}
-		System.out.println("running");
 		String[] links = null;
 
 		try {
@@ -149,13 +207,5 @@ public class Crawler implements Runnable {
 		}
 		
 		return;
-	}
-	
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-
-	}
-
+	}	
 }
