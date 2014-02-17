@@ -62,8 +62,7 @@ public class Master {
 
 	
 	private boolean isHTMLPageType(String pageType) {
-//		return pageType == "html" || pageType == "htm" || pageType == "";
-		return true;
+		return pageType == "html" || pageType == "htm" || pageType == "";
 	}
 
 	
