@@ -56,6 +56,7 @@ public class Master {
 	private String[] m_seedUrls = null;
 	private ThreadPoolExecutor m_executorPool;
 	private int m_linkCounts = 0;
+	private int m_maxCrawlers = 1;
 	private ArrayList<String> m_results = new ArrayList<String>();
 
 	
@@ -80,9 +81,10 @@ public class Master {
 
 		this.m_seedUrls = seedUrls;
 		this.m_maxPagesToCrawl = maxPagesToCrawl;
+		this.m_maxCrawlers = numOfCrawlers;
 		this.m_executorPool = new ThreadPoolExecutor(
-				numOfCrawlers,
-				numOfCrawlers, 
+				m_maxCrawlers,
+				m_maxCrawlers, 
 				Long.MAX_VALUE,
 				TimeUnit.SECONDS,
 				new ArrayBlockingQueue<Runnable>(numOfCrawlers, true));
@@ -174,12 +176,17 @@ public class Master {
 		executeCrawl();
 		System.out.println("Found " + m_linkCounts + " links.");
 		
-		stopCrawlerThreads();
-        System.out.println("Stopped all crawlers.");
-        
+		System.out.println("Shutting down crawlers...");
+		m_executorPool.shutdownNow();
+		
         System.out.println("Writing results to file.");
         writeResultsToFile();
         System.out.println("Finished writing results to file.");
+		
+        while (!m_executorPool.isTerminated()) {
+			// Wait till threads in the executor pool are stopped.
+		}
+        System.out.println("Stopped all crawlers.");
         
 		return m_results.toArray(new String[0]);
 	}
@@ -193,7 +200,7 @@ public class Master {
 	 */
 	private void executeCrawl() {
 		while ((m_linkCounts < m_maxPagesToCrawl) && !isDeadEnd()) {
-			if (m_urisRepository.isEmpty()) {
+			if (m_urisRepository.isEmpty() || m_executorPool.getActiveCount() >= m_maxCrawlers) {
 				continue;
 			}
 
@@ -209,17 +216,6 @@ public class Master {
 			if (uri != null) {
 				m_executorPool.execute(new Crawler(uri, this));
 			}
-		}
-	}
-	
-	/**
-	 * Shutdown all scheduled and running threads in the pool.
-	 */
-	private void stopCrawlerThreads() {
-		m_executorPool.shutdownNow(); 
-
-		while (!m_executorPool.isTerminated()) {
-			// Wait till threads in the executor pool are stopped.
 		}
 	}
 	
