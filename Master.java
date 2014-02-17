@@ -278,6 +278,8 @@ public class Master {
 		addUrlListToRepository(links);
 		m_results.add(prettyFormatResultString(crawledHost,RTT));
 		m_linkCounts += 1;
+		
+		System.out.println(m_linkCounts + " URLs crawled.");
 	}
 	
 	/**

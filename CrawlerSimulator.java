@@ -18,9 +18,12 @@ public class CrawlerSimulator {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
-		int maxURLs = 20;
-		int maxCrawlers = 20;
+		String[] seedUrls = {
+				"https://news.ycombinator.com/",
+				"http://en.wikipedia.org/wiki/United_States"
+				};
+		int maxURLs = 5000;
+		int maxCrawlers = 128;
 		
 		try {
 			Master master = new Master(seedUrls, maxURLs, maxCrawlers);
