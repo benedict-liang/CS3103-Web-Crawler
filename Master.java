@@ -62,7 +62,8 @@ public class Master {
 
 	
 	private boolean isHTMLPageType(String pageType) {
-		return pageType == "html" || pageType == "htm" || pageType == "";
+//		return pageType == "html" || pageType == "htm" || pageType == "";
+		return true;
 	}
 
 	
@@ -118,7 +119,8 @@ public class Master {
 	
 	
 	public synchronized void addCrawledLinks(String[] links, 
-			String crawledHost) {
+			String crawledHost, long RTT) {
+		// TODO: Add RTT in.
 		if (m_linkCounts >= LINK_COUNT_THRESHOLD) {
 			return;
 		}
