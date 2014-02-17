@@ -49,6 +49,7 @@ public class Master {
 
 	private static final int REQUEST_DELAY = 2000;
 	private static final String RESULTS_FILENAME = "results.txt";
+	private static final String WHITESPACE = "                               ";
 	private int m_maxPagesToCrawl;
 	private HashSet<String> m_seenHostNames = new HashSet<String>();
 	private ArrayList<URI> m_urisRepository = new ArrayList<URI>();
@@ -275,7 +276,23 @@ public class Master {
 		}
 		
 		addUrlListToRepository(links);
-		m_results.add(crawledHost + "        " + RTT + " milliseconds");
+		m_results.add(prettyFormatResultString(crawledHost,RTT));
 		m_linkCounts += 1;
+	}
+	
+	/**
+	 * Pretty formatter for the <host><RTT> string.
+	 * @param crawledHost the host that was visited.
+	 * @param RTT the request time taken to crawl the page.
+	 * @return the pretty formatted string.
+	 */
+	private String prettyFormatResultString(String crawledHost, long RTT) {
+		int bufferspace = WHITESPACE.length() - crawledHost.length();
+		
+		if (bufferspace <= 0) {
+			return crawledHost + " " + RTT + " milliseconds";
+		}
+
+		return crawledHost + WHITESPACE.substring(0, bufferspace) + RTT + " milliseconds";
 	}
 }
