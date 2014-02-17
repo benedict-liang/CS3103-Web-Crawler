@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 public class Master {
 
 	private static final int REQUEST_DELAY = 2000;
+	private static final String RESULTS_FILENAME = "results.txt";
 	private int m_maxPagesToCrawl;
 	private HashSet<String> m_seenHostNames = new HashSet<String>();
 	private ArrayList<URI> m_urisRepository = new ArrayList<URI>();
@@ -84,17 +85,34 @@ public class Master {
 				Long.MAX_VALUE,
 				TimeUnit.SECONDS,
 				new ArrayBlockingQueue<Runnable>(numOfCrawlers, true));
+
 		addUrlListToRepository(this.m_seedUrls);
 	}
 	
-	
+	/**
+	 * Add a list of URL strings to the URL Repository. The strings may
+	 * not be validated at this stage. 
+	 * @param urlList List of URL strings.
+	 */
 	private void addUrlListToRepository(String[] urlList) {
 		for (String url : urlList) {
 			addUrlToRepository(url);
 		}
 	}
 
-	
+	/**
+	 * Add a single URL string to the repository if it is a valid URL. The URL
+	 * string is convert to an URI object before being added to the repository.
+	 * If the string is invalid, the program will print the invalid string and
+	 * return but WILL NOT terminate subsequent executions.
+	 * 
+	 * Only HTML pages or pages with no extensions will be added to the
+	 * repository. Details can be found in the class doc.
+	 * 
+	 * URL strings with host names that have been added into the repository
+	 * will not be added.
+	 * @param url The URL string to add into the repository.
+	 */
 	private void addUrlToRepository(String url) {
 		URI uri = null;
 		try {
@@ -113,12 +131,23 @@ public class Master {
 		}
 	}
 
-	
+	/**
+	 * Checks if the given extension is of type HTML or has no extension. 
+	 * @param pageType The extension to check (eg. ".html", ".pdf", etc).
+	 * @return true if the extension is a HTML type or has no extension.
+	 * 		Returns false otherwise.
+	 */
 	private boolean isHTMLPageType(String pageType) {
 		return pageType == "html" || pageType == "htm" || pageType == "";
 	}
 
-	
+	/**
+	 * Gets the URL's page type. This is the extension of the page
+	 * (eg. ".html", ".pdf", ".jpg", etc). If no extension is present, an empty
+	 * string is returned.
+	 * @param rawPath The URL string.
+	 * @return the extension of the URL or an empty string.
+	 */
 	private String getPageType(String rawPath) {
 		if (rawPath == null) {
 			return "";
@@ -131,12 +160,38 @@ public class Master {
 		return "";
 	}
 	
-	
+	/**
+	 * Starts the crawler and writes the results to a file.
+	 * @return the results array. This consists of the visited hosts and their
+	 * 		request times.
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 * @throws URISyntaxException
+	 */
 	public String[] startCrawl() throws UnknownHostException, IOException,
 			URISyntaxException {	
-		while ((m_linkCounts < m_maxPagesToCrawl) &&
-				!(m_urisRepository.isEmpty() &&
-						(m_executorPool.getActiveCount() == 0))) {
+		executeCrawl();
+		System.out.println("Found " + m_linkCounts + " links.");
+		
+		stopCrawlerThreads();
+        System.out.println("Stopped all crawlers.");
+        
+        System.out.println("Writing results to file.");
+        writeResultsToFile();
+        System.out.println("Finished writing results to file.");
+        
+		return m_results.toArray(new String[0]);
+	}
+
+	/**
+	 * Executes the crawling procedure. The crawler will terminate once the
+	 * maximum number of pages to crawl has been reached or when there are no
+	 * links left to visit.
+	 * 
+	 * A request delay is included as well.
+	 */
+	private void executeCrawl() {
+		while ((m_linkCounts < m_maxPagesToCrawl) && !isDeadEnd()) {
 			if (m_urisRepository.isEmpty()) {
 				continue;
 			}
@@ -154,35 +209,41 @@ public class Master {
 				m_executorPool.execute(new Crawler(uri, this));
 			}
 		}
-		
-		System.out.println("Found " + m_linkCounts + " links.");
-		
-		if (!m_executorPool.isTerminated()) {
-			m_executorPool.shutdownNow(); 
-        }
+	}
+	
+	/**
+	 * Shutdown all scheduled and running threads in the pool.
+	 */
+	private void stopCrawlerThreads() {
+		m_executorPool.shutdownNow(); 
 
 		while (!m_executorPool.isTerminated()) {
 			// Wait till threads in the executor pool are stopped.
 		}
-		
-        System.out.println("Stopped all crawlers.");
-        
-        System.out.println("Writing results to file.");
-        writeResultsToFile();
-        System.out.println("Finished writing results to file.");
-        
-		return m_results.toArray(new String[0]);
 	}
 	
-	
+	/**
+	 * Checks if there are any links left to be visited. If there are no
+	 * links in the repository and there are no threads running, a dead end
+	 * is reached.
+	 * @return true if a dead end is reached. Return false otherwise.
+	 */
+	private boolean isDeadEnd() {
+		return m_urisRepository.isEmpty() &&
+				(m_executorPool.getActiveCount() == 0);
+	}
+
+	/**
+	 * Writes the results array into the results file.
+	 */
 	private void writeResultsToFile() {
 		try {
-			File resultsFile = new File("results.txt");
+			File resultsFile = new File(RESULTS_FILENAME);
 			if(!resultsFile.exists()) {
 				resultsFile.createNewFile();
 			} 
 			
-			PrintWriter writer = new PrintWriter("results.txt");
+			PrintWriter writer = new PrintWriter(RESULTS_FILENAME);
 			for (String r : m_results) {
 				writer.println(r);
 			}
@@ -198,14 +259,22 @@ public class Master {
 		}
 	}
 
-
-	public synchronized void addCrawledLinks(String[] links, 
+	/**
+	 * This is the callback function used by the crawler to update the master
+	 * with the links obtained from its crawl job. Only one crawler thread can
+	 * access this at any point in time to prevent an error from a race
+	 * condition.
+	 * @param links the URL strings to add into the repository.
+	 * @param crawledHost the host that was visited.
+	 * @param RTT the request time taken to crawl the page.
+	 */
+	public synchronized void addCrawledLinksCallback(String[] links, 
 			String crawledHost, long RTT) {
 		if (m_linkCounts >= m_maxPagesToCrawl) {
 			return;
 		}
 		
-//		addUrlListToRepository(links);
+		addUrlListToRepository(links);
 		m_results.add(crawledHost + "        " + RTT + " milliseconds");
 		m_linkCounts += 1;
 	}
