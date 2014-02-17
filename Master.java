@@ -278,29 +278,4 @@ public class Master {
 		m_results.add(crawledHost + "        " + RTT + " milliseconds");
 		m_linkCounts += 1;
 	}
-	
-	
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
-		
-		try {
-			Master master = new Master(seedUrls, 20, 100);
-			String[] res = master.startCrawl();
-			
-			System.out.println(Arrays.toString(res));
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
 }
