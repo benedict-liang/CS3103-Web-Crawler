@@ -1,9 +1,15 @@
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class Master {
@@ -112,11 +118,31 @@ public class Master {
 		}
 		
         System.out.println("Finished all threads.");
-
+        
+        writeResultsToFile();
+        
 		return m_results.toArray(new String[0]);
 	}
 	
 	
+	private void writeResultsToFile() {
+//		PrintWriter writer;
+//		try {
+//			writer = new PrintWriter("the-file-name.txt", "UTF-8");
+//			writer.println("The first line");
+//			writer.println("The second line");
+//			writer.close();
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (UnsupportedEncodingException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+
+	}
+
+
 	public synchronized void addCrawledLinks(String[] links, 
 			String crawledHost, long RTT) {
 		if (m_linkCounts >= LINK_COUNT_THRESHOLD) {
