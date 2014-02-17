@@ -8,8 +8,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is the crawler handler for the concurrent web crawler. The following
@@ -17,7 +18,7 @@ import java.util.concurrent.Executors;
  * - Users can set the maximum number of crawlers (threads). This provides
  * 		the user with control over how much resources to use for the crawler.
  * - Each thread request has a delay to prevent an "accidental" DOS attack.
- * - Threads are created and controlled by the ExecutorService class. This
+ * - Threads are created and controlled by the ThreadPoolExecutor class. This
  * 		class acts as a pool and thread scheduler. The size of the pool is
  * 		bounded by the maximum number of threads set by the user.
  * - The crawlers terminate when encountering either conditions:
@@ -46,12 +47,12 @@ import java.util.concurrent.Executors;
  */
 public class Master {
 
-	private static final int LINK_COUNT_THRESHOLD = 5;
 	private static final int REQUEST_DELAY = 2000;
+	private int m_maxPagesToCrawl;
 	private HashSet<String> m_seenHostNames = new HashSet<String>();
 	private ArrayList<URI> m_urisRepository = new ArrayList<URI>();
 	private String[] m_seedUrls = null;
-	private ExecutorService m_executorPool;
+	private ThreadPoolExecutor m_executorPool;
 	private int m_linkCounts = 0;
 	private ArrayList<String> m_results = new ArrayList<String>();
 
@@ -59,10 +60,11 @@ public class Master {
 	/**
 	 * Constructor for Master.
 	 * @param seedUrls The URLs to start crawling with.
+	 * @param maxPagesToCrawl The maximum number of pages to crawl.
 	 * @param numOfCrawlers The maximum number of crawlers to use.
 	 * @throws URISyntaxException
 	 */
-	public Master(String[] seedUrls, int numOfCrawlers) 
+	public Master(String[] seedUrls, int maxPagesToCrawl, int numOfCrawlers) 
 			throws URISyntaxException {
 		if (seedUrls.length < 1) {
 			throw new IllegalArgumentException(
@@ -75,7 +77,13 @@ public class Master {
 		}
 
 		this.m_seedUrls = seedUrls;
-		this.m_executorPool = Executors.newFixedThreadPool(numOfCrawlers);
+		this.m_maxPagesToCrawl = maxPagesToCrawl;
+		this.m_executorPool = new ThreadPoolExecutor(
+				numOfCrawlers,
+				numOfCrawlers, 
+				Long.MAX_VALUE,
+				TimeUnit.SECONDS,
+				new ArrayBlockingQueue<Runnable>(numOfCrawlers, true));
 		addUrlListToRepository(this.m_seedUrls);
 	}
 	
@@ -126,8 +134,9 @@ public class Master {
 	
 	public String[] startCrawl() throws UnknownHostException, IOException,
 			URISyntaxException {	
-		while ((m_urisRepository.isEmpty() && m_executorPool.isTerminated()) || 
-				(m_linkCounts < LINK_COUNT_THRESHOLD)) {
+		while ((m_linkCounts < m_maxPagesToCrawl) &&
+				!(m_urisRepository.isEmpty() &&
+						(m_executorPool.getActiveCount() == 0))) {
 			if (m_urisRepository.isEmpty()) {
 				continue;
 			}
@@ -151,7 +160,7 @@ public class Master {
 		if (!m_executorPool.isTerminated()) {
 			m_executorPool.shutdownNow(); 
         }
-		
+
 		while (!m_executorPool.isTerminated()) {
 			// Wait till threads in the executor pool are stopped.
 		}
@@ -192,7 +201,7 @@ public class Master {
 
 	public synchronized void addCrawledLinks(String[] links, 
 			String crawledHost, long RTT) {
-		if (m_linkCounts >= LINK_COUNT_THRESHOLD) {
+		if (m_linkCounts >= m_maxPagesToCrawl) {
 			return;
 		}
 		
@@ -207,10 +216,9 @@ public class Master {
 	 */
 	public static void main(String[] args) {
 		String[] seedUrls = {"http://en.wikipedia.org/wiki/United_States"};
-//		String[] seedUrls = {"http://example.com"};
 		
 		try {
-			Master master = new Master(seedUrls, 100);
+			Master master = new Master(seedUrls, 20, 100);
 			String[] res = master.startCrawl();
 			
 			System.out.println(Arrays.toString(res));
