@@ -22,7 +22,7 @@ public class CrawlerSimulator {
 				"https://news.ycombinator.com/",
 				"http://en.wikipedia.org/wiki/United_States"
 				};
-		int maxURLs = 5000;
+		int maxURLs = 1000;
 		int maxCrawlers = 128;
 		
 		try {
