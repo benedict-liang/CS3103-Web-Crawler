@@ -147,6 +147,8 @@ public class Crawler implements Runnable {
 			long RTT = m_startEndTimes.get("end") - m_startEndTimes.get("start");
 			m_master.addCrawledLinks(links, m_uri.getHost(), RTT);
 		}
+		
+		return;
 	}
 	
 	/**
