@@ -8,7 +8,6 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -34,6 +33,10 @@ public class Crawler implements Runnable {
 			"\r\nConnection: close\r\n\r\n";
 	private URI m_uri;
 	private Master m_master;
+	
+	/**
+	 * The total RTT (request and response time).
+	 */
 	private long m_requestTime = 0;
 
 
@@ -67,7 +70,8 @@ public class Crawler implements Runnable {
 		Socket socket = new Socket(host, port);
 
 		sendGETRequest(host, requestPath, socket);
-		ArrayList<String> absLinks = getLinksFromHTMLPage(socket);
+		String html = readDocumentStringFromSocketBuffer(socket);
+		ArrayList<String> absLinks = getLinksFromHTMLPage(html);
 
 		socket.close();
 		
@@ -76,14 +80,12 @@ public class Crawler implements Runnable {
 
 	/**
 	 * Strip out all the links from the given HTML page.
-	 * @param socket the socket connecting to the request URI.
+	 * @param html the HTML document string.
 	 * @return the array of absolute URLs obtained from the response page. 
 	 * @throws IOException
 	 */
-	private ArrayList<String> getLinksFromHTMLPage(Socket socket) 
+	private ArrayList<String> getLinksFromHTMLPage(String html) 
 			throws IOException {
-		String html = readDocumentStringFromSocketBuffer(socket);
-		
 		Document doc = Jsoup.parse(html);
 		Elements links = doc.select("a[href]");
 		
@@ -110,7 +112,6 @@ public class Crawler implements Runnable {
 	/**
 	 * Obtain the HTML document string from the socket buffer.
 	 * @param socket the socket connecting to the request URI.
-	 * @param startEndTimes the start and end times map to update.
 	 * @return the HTML document string.
 	 * @throws IOException
 	 */
@@ -121,13 +122,19 @@ public class Crawler implements Runnable {
 		        new InputStreamReader(inputStream));
 		
 		StringBuffer sb = new StringBuffer();
-		String line = "";
+		
+		// Profile response time
 		long start = System.currentTimeMillis();
+
+		sb.append(serverReader.readLine());
+		
+		long end = System.currentTimeMillis();
+		m_requestTime += (end - start);
+
+		String line = "";
 		while ((line = serverReader.readLine()) != null) {
 		    sb.append(line);
 		}
-		long end = System.currentTimeMillis();
-		m_requestTime += (end - start);
 
 		return sb.toString();
 	}
@@ -137,15 +144,16 @@ public class Crawler implements Runnable {
 	 * @param host the URI host.
 	 * @param requestPath the URI request path relative to the host.
 	 * @param socket the socket connecting to the request URI.
-	 * @param startEndTimes the start and end times map to update.
 	 * @throws IOException
 	 */
 	private void sendGETRequest(String host, String requestPath,
 			Socket socket) throws IOException {
-		DataOutputStream request = new DataOutputStream(socket.getOutputStream());
+		DataOutputStream request = new DataOutputStream(
+				socket.getOutputStream());
 		String formattedGetRequestString = String.format(GET_REQUEST_STRING,
 				requestPath, host);
-
+		
+		// Profile Request Time
 		long start = System.currentTimeMillis();
 		request.writeBytes(formattedGetRequestString);
 		long end = System.currentTimeMillis();
